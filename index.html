@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Inspect WebAssembly bytes, decode bounded integers, read a text listing and step through integer execution locally.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>WebAssembly Hex Disassembler</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to inspector</a>
+  <header><h1>WebAssembly Hex Disassembler</h1></header>
+  <main id="main">
+    <section class="input-bench" aria-labelledby="input-title">
+      <h2 id="input-title">Inspect a module</h2>
+      <div class="input-controls">
+        <div><label for="demo-select">Demonstration</label><select id="demo-select"><option value="add">Integer addition</option><option value="sum">Loop and branch</option><option value="select">Conditional result</option></select></div>
+        <button type="button" id="demo-load">Load demonstration</button>
+        <div><label for="file-input">Local binary, up to 4 MiB</label><input type="file" id="file-input" accept=".wasm,application/wasm"></div>
+      </div>
+      <details><summary>Paste hexadecimal bytes</summary><label for="hex-input">Byte pairs separated by spaces</label><textarea id="hex-input" rows="3" spellcheck="false"></textarea><button type="button" id="hex-load">Inspect pasted bytes</button></details>
+      <p id="status" role="status" aria-live="polite"></p>
+      <p id="summary"></p>
+    </section>
+    <div class="inspection-grid">
+      <section aria-labelledby="sections-title">
+        <h2 id="sections-title">Sections and offsets</h2>
+        <div class="table-scroll"><table><thead><tr><th scope="col">Section</th><th scope="col">Start</th><th scope="col">Payload</th><th scope="col">Bytes</th></tr></thead><tbody id="sections-body"></tbody></table></div>
+        <p id="sections-note" class="note"></p>
+        <h3>Variable length integers</h3>
+        <p id="integer-note" class="note"></p>
+        <div class="table-scroll"><table><thead><tr><th scope="col">Offset</th><th scope="col">Bytes</th><th scope="col">Type</th><th scope="col">Value</th></tr></thead><tbody id="integers-body"></tbody></table></div>
+      </section>
+      <section aria-labelledby="hex-title">
+        <h2 id="hex-title">Bytes</h2>
+        <p id="hex-note" class="note"></p>
+        <div id="hex-view" class="hex-view" tabindex="0" role="region" aria-label="Hexadecimal bytes and printable text"></div>
+      </section>
+    </div>
+    <section aria-labelledby="listing-title">
+      <div class="section-heading"><h2 id="listing-title">Text listing</h2><button type="button" id="wat-copy">Copy listing</button></div>
+      <p id="wat-note" class="note"></p>
+      <pre id="wat-view" tabindex="0" aria-label="Disassembled text listing"></pre>
+    </section>
+    <section aria-labelledby="trace-title">
+      <h2 id="trace-title">Integer execution</h2>
+      <div class="trace-controls">
+        <div><label for="trace-function">Exported function</label><select id="trace-function"></select></div>
+        <div><label for="trace-args">Parameters as an integer array</label><input id="trace-args" value="[2,3]" spellcheck="false"></div>
+        <div><label for="trace-limit">Instruction limit</label><input type="number" id="trace-limit" min="1" max="10000" value="2000"></div>
+        <button type="button" id="trace-run">Run trace</button>
+      </div>
+      <p id="trace-view" role="status"></p>
+      <label for="trace-step">Instruction <output id="step-number" for="trace-step" aria-live="polite">0</output></label>
+      <input type="range" id="trace-step" min="1" max="1" value="1" disabled>
+      <pre id="step-state" tabindex="0" aria-live="polite" aria-atomic="true" aria-label="Operand stack and local values at the selected instruction"></pre>
+    </section>
+    <section class="scope" aria-labelledby="scope-title">
+      <h2 id="scope-title">Supported scope</h2>
+      <p>The inspector reads MVP types, imports, functions, tables, memory, globals, exports, start, active element segments, data and custom sections, and it also accepts the post-MVP data-count section, passive and explicitly indexed data segments, and multiple tables and memories. Element segment flags 1 through 7, reference types beyond funcref and externref, the typed select opcode, shared memory, 64-bit memory and newer prefixed instruction families produce a named error.</p>
+      <p>The tracer executes i32 arithmetic, bit operations, comparisons, locals, direct calls, blocks, loops, conditionals and branches. It stops on unsupported instructions or a resource limit. Imported functions and module start functions are never executed. Results are checked against native execution in the test suite.</p>
+      <p>All input stays in this page. The text listing is an inspection output; this tool does not assemble text or replace a complete runtime.</p>
+    </section>
+  </main>
+  <noscript><p>This inspector needs JavaScript. Enable it to inspect a local file or use a demonstration.</p></noscript>
+  <script type="module" src="src/app.mjs"></script>
+</body>
+</html>

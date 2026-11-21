@@ -1,0 +1,11 @@
+{
+  "name": "wasm-hex-disasm",
+  "version": "1.0.0",
+  "description": "Zero-dependency WebAssembly binary parser, LEB128 inspector, WAT disassembler, and stack-machine execution tracer.",
+  "type": "module",
+  "main": "src/wasm.mjs",
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "license": "MIT"
+}
