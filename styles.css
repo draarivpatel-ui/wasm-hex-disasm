@@ -49,6 +49,55 @@ thead { position: sticky; top: 0; background: var(--paper); }
 ::selection { background: #b8d4c3; color: var(--ink); }
 input, textarea { caret-color: var(--accent); }
 * { scrollbar-color: var(--accent) var(--surface); scrollbar-width: thin; }
+.section-map { display: flex; gap: 3px; height: 52px; padding: 4px; margin: 0 0 12px; background: var(--surface); border-radius: 8px; }
+.seg { min-width: 0; height: 100%; border: none; border-radius: 5px; padding: 0 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; font-family: "Hanken Grotesk", sans-serif; font-size: 0.72rem; color: #f4f0e7; white-space: nowrap; text-overflow: ellipsis; }
+.seg:hover { filter: brightness(1.12); }
+.seg:focus-visible { outline-offset: -2px; }
+.seg-header { background: #8b8577; }
+.seg-custom { background: #a08a63; }
+.seg-type { background: #5d7f6e; }
+.seg-import { background: #a0623d; }
+.seg-function { background: #4a7361; }
+.seg-table { background: #96755f; }
+.seg-memory { background: #4f6d8a; }
+.seg-global { background: #7d6180; }
+.seg-export { background: #245d49; }
+.seg-start { background: #9c4f2e; }
+.seg-element { background: #6d7a72; }
+.seg-code { background: #1e3d31; }
+.seg-data { background: #5b5470; }
+.seg-data-count { background: #75817a; }
+.call-graph { overflow-x: auto; }
+.call-graph svg { display: block; width: 100%; max-width: 900px; height: auto; margin-inline: auto; }
+.cg-node rect { fill: var(--surface); stroke: var(--muted); stroke-width: 1.2; }
+.cg-node.cg-export rect { fill: #cfe0d6; stroke: var(--accent); stroke-width: 2; }
+.cg-node.cg-defined rect { fill: #e5eae3; stroke: #4a7361; }
+.cg-node.cg-import rect { fill: #ecdfc8; stroke: #a0623d; }
+.cg-node.cg-dead rect { fill: #e5eae3; stroke: var(--muted); stroke-dasharray: 5 4; opacity: 0.72; }
+.cg-node.cg-dead text { fill: var(--muted); }
+.cg-label { font-family: "Hanken Grotesk", sans-serif; font-size: 10px; font-weight: 600; fill: var(--ink); }
+.cg-count { font-family: monospace; font-size: 8.5px; fill: var(--muted); }
+.cg-edge { stroke: #7d8a83; stroke-width: 1.4; }
+.cg-arrow { fill: #7d8a83; }
+.graph-legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 8px; font-family: "Hanken Grotesk", sans-serif; font-size: 0.78rem; color: var(--muted); }
+.lg::before { content: ""; display: inline-block; width: 12px; height: 12px; margin-right: 6px; border-radius: 3px; vertical-align: -1px; background: var(--surface); border: 1.5px solid var(--muted); }
+.lg-export::before { background: #cfe0d6; border-color: var(--accent); }
+.lg-defined::before { border-color: #4a7361; }
+.lg-import::before { background: #ecdfc8; border-color: #a0623d; }
+.lg-dead::before { border-style: dashed; opacity: 0.7; }
+.audit-list, .self-test-view { list-style: none; padding: 0; margin: 20px 0 0; }
+.audit-list li, .self-test-view li { padding: 12px 16px; margin: 0 0 8px; background: var(--surface); border-left: 4px solid var(--line); border-radius: 4px; font-family: "Hanken Grotesk", sans-serif; font-size: 0.85rem; line-height: 1.5; }
+.audit-list li.flag { border-left-color: #9c4f2e; }
+.audit-list li.notice { border-left-color: #a08a3d; }
+.audit-list li.info { border-left-color: var(--accent); }
+.self-test-view li.pass { border-left-color: var(--accent); }
+.self-test-view li.fail { border-left-color: var(--error); }
+.finding-title { font-weight: 600; }
+.fingerprint-line { font-family: "Hanken Grotesk", sans-serif; font-size: 0.85rem; }
+#fingerprint { font-family: monospace; font-size: 0.78rem; word-break: break-all; }
+.report-controls { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+#run-result { min-height: 1.5em; font-family: monospace; font-size: 0.85rem; }
+#status, #run-result, .audit-list li, .self-test-view li, #fingerprint { overflow-wrap: anywhere; }
 @media (max-width: 900px) { .inspection-grid { grid-template-columns: 1fr; gap: 0; } .trace-controls { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { header, main, noscript { width: calc(100% - 28px); } header { padding-top: 28px; } .input-controls, .trace-controls { grid-template-columns: 1fr; gap: 16px; } button { min-height: 44px; } .section-heading { align-items: start; } .hex-view, pre { padding: 14px; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

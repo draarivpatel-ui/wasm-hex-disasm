@@ -10,3 +10,9 @@ export function functionModule(body, { params = [0x7f, 0x7f], results = [0x7f], 
     section(10, [1].concat(encodeULEB(bytes.length), bytes)));
 }
 export const constant = (n) => [0x41].concat(encodeSLEB(n));
+export const nameSection = (pairs) => {
+  const inner = [pairs.length].concat(...pairs.map(([index, text]) => [index].concat(nameBytes(text))));
+  return section(0, nameBytes('name').concat([1], encodeULEB(inner.length), inner));
+};
+export const customSection = (name, payload) => section(0, nameBytes(name).concat(payload));
+export const importEntry = (module, name, descriptor) => nameBytes(module).concat(nameBytes(name), descriptor);

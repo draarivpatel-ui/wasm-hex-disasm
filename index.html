@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Inspect WebAssembly bytes, decode bounded integers, read a text listing and step through integer execution locally.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="Inspect WebAssembly bytes, map its sections, audit its capabilities, graph its calls and run integer exports in a sandbox, fully offline.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>WebAssembly Hex Disassembler</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23245d49'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='15' fill='%23f4f0e7' text-anchor='middle'%3E0x%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -38,6 +39,23 @@
         <div id="hex-view" class="hex-view" tabindex="0" role="region" aria-label="Hexadecimal bytes and printable text"></div>
       </section>
     </div>
+    <section aria-labelledby="map-title">
+      <h2 id="map-title">Section map</h2>
+      <div id="section-map" class="section-map" role="group" aria-label="Proportional byte map of module sections"></div>
+      <p id="section-map-note" class="note"></p>
+      <div class="table-scroll"><table><thead><tr><th scope="col">Region</th><th scope="col">Start</th><th scope="col">Bytes</th><th scope="col">Share</th></tr></thead><tbody id="section-map-body"></tbody></table></div>
+    </section>
+    <section aria-labelledby="graph-title">
+      <h2 id="graph-title">Call graph</h2>
+      <div id="call-graph" class="call-graph" role="img" aria-label="Static call graph of module functions"></div>
+      <div class="graph-legend" aria-hidden="true"><span class="lg lg-export">exported</span><span class="lg lg-defined">defined</span><span class="lg lg-import">imported</span><span class="lg lg-dead">unreachable</span></div>
+      <p id="call-graph-note" class="note"></p>
+    </section>
+    <section aria-labelledby="audit-title">
+      <h2 id="audit-title">Capability audit</h2>
+      <p id="audit-summary"></p>
+      <ul id="audit-list" class="audit-list"></ul>
+    </section>
     <section aria-labelledby="listing-title">
       <div class="section-heading"><h2 id="listing-title">Text listing</h2><button type="button" id="wat-copy">Copy listing</button></div>
       <p id="wat-note" class="note"></p>
@@ -56,10 +74,34 @@
       <input type="range" id="trace-step" min="1" max="1" value="1" disabled>
       <pre id="step-state" tabindex="0" aria-live="polite" aria-atomic="true" aria-label="Operand stack and local values at the selected instruction"></pre>
     </section>
+    <section aria-labelledby="runner-title">
+      <h2 id="runner-title">Sandboxed runner</h2>
+      <div class="trace-controls">
+        <div><label for="run-function">Exported function</label><select id="run-function"></select></div>
+        <div><label for="run-args">Parameters as a JSON array</label><input id="run-args" value="[2,3]" spellcheck="false"></div>
+        <button type="button" id="run-export">Run in sandbox</button>
+      </div>
+      <p id="run-note" class="note"></p>
+      <p id="run-result" role="status"></p>
+    </section>
+    <section aria-labelledby="report-title">
+      <h2 id="report-title">Report and self-tests</h2>
+      <p class="fingerprint-line">SHA-256 <code id="fingerprint"></code></p>
+      <div class="report-controls">
+        <button type="button" id="dl-wat">Download .wat</button>
+        <button type="button" id="dl-json">Download JSON report</button>
+        <button type="button" id="dl-csv">Download CSV</button>
+        <button type="button" id="share-link">Copy share link</button>
+        <button type="button" id="self-test-run">Run self-tests</button>
+      </div>
+      <p id="report-note" class="note"></p>
+      <ul id="self-test-view" class="self-test-view"></ul>
+    </section>
     <section class="scope" aria-labelledby="scope-title">
       <h2 id="scope-title">Supported scope</h2>
       <p>The inspector reads MVP types, imports, functions, tables, memory, globals, exports, start, active element segments, data and custom sections, and it also accepts the post-MVP data-count section, passive and explicitly indexed data segments, and multiple tables and memories. Element segment flags 1 through 7, reference types beyond funcref and externref, the typed select opcode, shared memory, 64-bit memory and newer prefixed instruction families produce a named error.</p>
       <p>The tracer executes i32 arithmetic, bit operations, comparisons, locals, direct calls, blocks, loops, conditionals and branches. It stops on unsupported instructions or a resource limit. Imported functions and module start functions are never executed. Results are checked against native execution in the test suite.</p>
+      <p>The sandboxed runner executes only zero-import integer exports inside a dedicated worker thread with a 1500 ms budget and an empty import object, and the capability audit flags host imports, linear memory growth, indirect dispatch, trap instructions, embedded debug names and unreachable functions.</p>
       <p>All input stays in this page. The text listing is an inspection output; this tool does not assemble text or replace a complete runtime.</p>
     </section>
   </main>
