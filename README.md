@@ -2,6 +2,8 @@
 
 A local binary inspector, bounded LEB128 decoder, text disassembler and integer execution tracer. The module is parsed before native validation, and inspection never instantiates a module or invokes imported host functions.
 
+**Live demo:** [https://aariv.me/wasm-hex-disasm/](https://aariv.me/wasm-hex-disasm/)
+
 ## Workbench
 
 - Load a local binary, paste hexadecimal byte pairs or choose one of three valid demonstration modules.
