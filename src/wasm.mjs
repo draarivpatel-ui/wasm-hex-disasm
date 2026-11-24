@@ -16,9 +16,17 @@ const MAX_LEB_SPANS = 100000;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
 
+function byteInput(input) {
+  if (!(input instanceof Uint8Array) && !Array.isArray(input)) throw new TypeError('Expected an array of byte values');
+  for (let i = 0; i < input.length; i++) {
+    if (!Number.isInteger(input[i]) || input[i] < 0 || input[i] > 255) throw new TypeError('Expected an array of byte values');
+  }
+  return input instanceof Uint8Array ? input : Uint8Array.from(input);
+}
+
 export class Reader {
   constructor(bytes, start = 0, end = bytes.length, spans = [], budget = { instructions: 0, locals: 0 }) {
-    this.bytes = bytes instanceof Uint8Array ? bytes : Uint8Array.from(bytes);
+    this.bytes = byteInput(bytes);
     this.offset = start;
     this.end = end;
     this.spans = spans;
@@ -195,7 +203,7 @@ function tableType(r) {
 }
 
 export function parseModule(input, { validate = true } = {}) {
-  const bytes = input instanceof Uint8Array ? input : Uint8Array.from(input);
+  const bytes = byteInput(input);
   if (bytes.length > 4 * 1024 * 1024) throw new BinaryError('Input exceeds the 4 MiB inspection limit', 0);
   const spans = [], r = new Reader(bytes, 0, bytes.length, spans);
   const header = [0, 97, 115, 109, 1, 0, 0, 0];

@@ -15,8 +15,16 @@ const SHA256_K = [
 ];
 const rotr = (x, n) => ((x >>> n) | (x << (32 - n))) >>> 0;
 
+function byteInput(input) {
+  if (!(input instanceof Uint8Array) && !Array.isArray(input)) throw new TypeError('Expected an array of byte values');
+  for (let i = 0; i < input.length; i++) {
+    if (!Number.isInteger(input[i]) || input[i] < 0 || input[i] > 255) throw new TypeError('Expected an array of byte values');
+  }
+  return input instanceof Uint8Array ? input : Uint8Array.from(input);
+}
+
 export function sha256(input) {
-  const bytes = input instanceof Uint8Array ? input : Uint8Array.from(input);
+  const bytes = byteInput(input);
   const length = bytes.length;
   const total = ((length + 9 + 63) >> 6) << 6;
   const data = new Uint8Array(total);
@@ -158,15 +166,21 @@ export function marshalArgs(params, rawArgs) {
   if (rawArgs.length !== params.length) throw new Error('This function takes ' + params.length + ' parameter(s), got ' + rawArgs.length);
   return params.map((type, i) => {
     const value = rawArgs[i];
+    const numericInput = typeof value === 'number' || typeof value === 'bigint' ||
+      (typeof value === 'string' && value.trim() !== '');
     if (type === 'i64') {
+      if (!numericInput || typeof value === 'boolean') throw new Error('Parameter ' + (i + 1) + ' must be an integer');
+      if (typeof value === 'number' && !Number.isInteger(value)) throw new Error('Parameter ' + (i + 1) + ' must be an integer');
       try { return BigInt(value); } catch { throw new Error('Parameter ' + (i + 1) + ' must be an integer'); }
     }
     if (type === 'i32') {
+      if (!numericInput || typeof value === 'bigint') throw new Error('Parameter ' + (i + 1) + ' must be an integer');
       const n = Number(value);
       if (!Number.isFinite(n) || !Number.isInteger(n)) throw new Error('Parameter ' + (i + 1) + ' must be an integer');
       return n | 0;
     }
     if (type === 'f32' || type === 'f64') {
+      if (!numericInput || typeof value === 'bigint') throw new Error('Parameter ' + (i + 1) + ' must be a number');
       const n = Number(value);
       if (!Number.isFinite(n)) throw new Error('Parameter ' + (i + 1) + ' must be a number');
       return n;
@@ -238,9 +252,12 @@ export function reportJSON(mod, { fingerprint, wat } = {}) {
   };
 }
 
+const FORMULA_FIRST = new Set(['=', '+', '-', '@', '\t', '\r']);
 const csvCell = (value) => {
-  const text = String(value);
-  return /[",\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+  let text = String(value);
+  const first = text.trimStart().charAt(0);
+  if (first && FORMULA_FIRST.has(first)) text = "'" + text;
+  return /[",\n\r]/.test(text) || text !== text.trim() ? '"' + text.replace(/"/g, '""') + '"' : text;
 };
 
 export function reportCSV(mod) {
@@ -254,7 +271,7 @@ export function reportCSV(mod) {
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 export function bytesToBase64url(bytes) {
-  const data = bytes instanceof Uint8Array ? bytes : Uint8Array.from(bytes);
+  const data = byteInput(bytes);
   let out = '';
   for (let i = 0; i < data.length; i += 3) {
     const a = data[i], b = i + 1 < data.length ? data[i + 1] : null, c = i + 2 < data.length ? data[i + 2] : null;
@@ -268,6 +285,7 @@ export function bytesToBase64url(bytes) {
 export function base64urlToBytes(text) {
   const input = String(text).replace(/=+$/, '');
   if (!/^[A-Za-z0-9_-]*$/.test(input)) throw new Error('Share link data is not base64url');
+  if (input.length % 4 === 1) throw new Error('Share link data has an invalid base64url length');
   const lookup = new Map(Array.from(B64, (ch, i) => [ch, i]));
   const out = [];
   for (let i = 0; i < input.length; i += 4) {
@@ -282,7 +300,7 @@ export function base64urlToBytes(text) {
 
 export const SHARE_LIMIT = 32768;
 export function shareHash(bytes) {
-  const data = bytes instanceof Uint8Array ? bytes : Uint8Array.from(bytes);
+  const data = byteInput(bytes);
   if (data.length > SHARE_LIMIT) return null;
   return '#b=' + bytesToBase64url(data);
 }
@@ -290,7 +308,10 @@ export function shareHash(bytes) {
 export function restoreHash(hash) {
   const text = String(hash || '');
   if (!text.startsWith('#b=')) return null;
-  return base64urlToBytes(text.slice(3));
+  const encoded = text.slice(3).replace(/=+$/, '');
+  const maxEncodedLength = Math.floor(SHARE_LIMIT / 3) * 4 + (SHARE_LIMIT % 3 ? SHARE_LIMIT % 3 + 1 : 0);
+  if (encoded.length > maxEncodedLength) throw new Error('Share link data exceeds the ' + SHARE_LIMIT + ' byte limit');
+  return base64urlToBytes(encoded);
 }
 
 export function auditModule(mod, fingerprint) {

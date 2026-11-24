@@ -107,7 +107,7 @@ export function selfTestMarkup(results) {
 
 export function mount(doc, win) {
   const $ = (id) => doc.getElementById(id);
-  const state = { module: null, wat: '', trace: null, requestVersion: 0, plan: null, fingerprint: '' };
+  const state = { module: null, wat: '', trace: null, requestVersion: 0, runVersion: 0, plan: null, fingerprint: '' };
   const status = (message, error = false) => {
     $('status').textContent = message;
     $('status').classList.toggle('is-error', error);
@@ -118,6 +118,7 @@ export function mount(doc, win) {
     'run-note', 'fingerprint', 'self-test-view', 'report-note'];
   function clear() {
     state.requestVersion++;
+    state.runVersion++;
     state.module = null; state.wat = ''; state.trace = null; state.plan = null; state.fingerprint = '';
     for (const id of clearable) $(id).textContent = '';
     $('trace-function').textContent = '';
@@ -150,20 +151,31 @@ export function mount(doc, win) {
       let url;
       try { url = win.URL.createObjectURL(new win.Blob([WORKER_RUNNER_SOURCE], { type: 'text/javascript' })); }
       catch { resolve(null); return; }
-      const worker = new win.Worker(url);
-      const timer = setTimeout(() => {
+      let worker;
+      try { worker = new win.Worker(url); }
+      catch {
+        if (win.URL.revokeObjectURL) win.URL.revokeObjectURL(url);
+        resolve(null);
+        return;
+      }
+      let settled = false;
+      const finish = (result) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
         worker.terminate();
-        resolve({ ok: false, error: 'Execution exceeded the 1500 ms sandbox budget and the worker was terminated.' });
+        if (win.URL.revokeObjectURL) win.URL.revokeObjectURL(url);
+        resolve(result);
+      };
+      const timer = setTimeout(() => {
+        finish({ ok: false, error: 'Execution exceeded the 1500 ms sandbox budget and the worker was terminated.' });
       }, 1500);
       worker.onmessage = (event) => {
-        clearTimeout(timer); worker.terminate();
-        if (win.URL.revokeObjectURL) win.URL.revokeObjectURL(url);
-        resolve(event.data && event.data.ok ? { ok: true, results: event.data.values } :
+        finish(event.data && event.data.ok ? { ok: true, results: event.data.values } :
           { ok: false, error: (event.data && event.data.error) || 'Worker execution failed' });
       };
       worker.onerror = (event) => {
-        clearTimeout(timer); worker.terminate();
-        resolve({ ok: false, error: event.message || 'Worker execution failed' });
+        finish({ ok: false, error: event.message || 'Worker execution failed' });
       };
       worker.postMessage({ bytes: state.module.bytes, name: cand.name, params: cand.params, results: cand.results,
         args: args.map((v) => (typeof v === 'bigint' ? String(v) : v)) });
@@ -330,12 +342,22 @@ export function mount(doc, win) {
     try { raw = JSON.parse($('run-args').value); }
     catch { status('Parameters must be a JSON array', true); return; }
     $('run-result').textContent = 'Running ' + cand.name + ' in the sandbox worker.';
-    const result = await executeExport(cand, raw);
-    $('run-result').textContent = result.ok
-      ? cand.name + '(' + raw.map((v) => JSON.stringify(v)).join(', ') + ') returned ' +
-        result.results.map((r) => r.display).join(', ') + '.'
-      : 'Stopped: ' + result.error;
-    status(result.ok ? 'Sandboxed execution returned.' : result.error, !result.ok);
+    const version = state.requestVersion;
+    const runVersion = ++state.runVersion;
+    $('run-export').disabled = true;
+    try {
+      const result = await executeExport(cand, raw);
+      if (version !== state.requestVersion || runVersion !== state.runVersion) return;
+      $('run-result').textContent = result.ok
+        ? cand.name + '(' + raw.map((v) => JSON.stringify(v)).join(', ') + ') returned ' +
+          result.results.map((r) => r.display).join(', ') + '.'
+        : 'Stopped: ' + result.error;
+      status(result.ok ? 'Sandboxed execution returned.' : result.error, !result.ok);
+    } finally {
+      if (version === state.requestVersion && runVersion === state.runVersion && state.plan) {
+        $('run-export').disabled = !state.plan.candidates.some((c) => c.runnable);
+      }
+    }
   });
   $('trace-step').addEventListener('input', renderStep);
   $('wat-copy').addEventListener('click', async () => {
