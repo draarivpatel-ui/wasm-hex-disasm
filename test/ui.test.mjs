@@ -43,6 +43,7 @@ test('Controller boot fills actual sections, integer spans, bytes and listing', 
   assert.match(nodes['integers-body'].innerHTML, /u32/);
   assert.match(nodes['hex-view'].innerHTML, /hex-row/);
   assert.match(nodes['wat-view'].textContent, /i32.add/);
+  assert.match(nodes.summary.textContent, /1 defined function, 1 export\./);
   assert.equal(nodes['trace-run'].disabled, false);
 });
 

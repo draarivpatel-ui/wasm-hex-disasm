@@ -108,6 +108,7 @@ export function selfTestMarkup(results) {
 export function mount(doc, win) {
   const $ = (id) => doc.getElementById(id);
   const state = { module: null, wat: '', trace: null, requestVersion: 0, runVersion: 0, plan: null, fingerprint: '' };
+  const countText = (count, singular, plural = singular + 's') => count + ' ' + (count === 1 ? singular : plural);
   const status = (message, error = false) => {
     $('status').textContent = message;
     $('status').classList.toggle('is-error', error);
@@ -207,8 +208,8 @@ export function mount(doc, win) {
         (mod.lebTotal === undefined ? mod.lebSpans.length : mod.lebTotal) + ' decoded integers.';
       $('wat-view').textContent = state.wat.slice(0, 200000);
       $('wat-note').textContent = state.wat.length > 200000 ? 'The visible listing is truncated. Copy retrieves the complete listing.' : 'The listing comes from parsed instructions and section fields.';
-      $('summary').textContent = mod.bytes.length + ' bytes, ' + mod.sections.length + ' sections, ' +
-        mod.functions.length + ' defined functions, ' + mod.exports.length + ' exports. Native validation passed.';
+      $('summary').textContent = countText(mod.bytes.length, 'byte') + ', ' + countText(mod.sections.length, 'section') + ', ' +
+        countText(mod.functions.length, 'defined function') + ', ' + countText(mod.exports.length, 'export') + '. Native validation passed.';
       const map = sectionMapMarkup(mod);
       $('section-map').innerHTML = map.bar;
       $('section-map-body').innerHTML = map.rows;
@@ -218,7 +219,7 @@ export function mount(doc, win) {
       $('call-graph-note').textContent = graph.note;
       const audit = auditModule(mod);
       $('audit-list').innerHTML = auditMarkup(audit);
-      $('audit-summary').textContent = audit.findings.length + ' findings: ' + audit.counts.flags + ' flagged, ' + audit.counts.notices + ' notices.';
+      $('audit-summary').textContent = countText(audit.findings.length, 'finding') + ': ' + audit.counts.flags + ' flagged, ' + countText(audit.counts.notices, 'notice') + '.';
       state.plan = sandboxPlan(mod);
       state.fingerprint = sha256(mod.bytes);
       $('fingerprint').textContent = state.fingerprint;
