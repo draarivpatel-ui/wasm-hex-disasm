@@ -9,7 +9,7 @@ export function escapeHtml(value) {
 
 export function inspectionMarkup(mod, selectedSection = null) {
   const sections = mod.sections.slice(0, 500).map((s, index) => '<tr><td><button type="button" class="section-button" data-section="' +
-    index + '">' + escapeHtml(s.name) + '</button></td><td>' + s.offset + '</td><td>' + s.payloadOffset +
+    index + '">' + escapeHtml(s.name) + '</button><span class="print-label">' + escapeHtml(s.name) + '</span></td><td>' + s.offset + '</td><td>' + s.payloadOffset +
     '</td><td>' + s.size + '</td></tr>').join('');
   const prefix = mod.bytes.subarray(0, 16384);
   const hex = hexRows(prefix).map((r) => '<div class="hex-row' + (selectedSection &&
@@ -29,7 +29,7 @@ export function sectionMapMarkup(mod) {
     e.size + ' bytes, ' + (e.share * 100).toFixed(1) + '%">' + (e.share >= 0.06 ? '<span>' + escapeHtml(e.name) + '</span>' : '') +
     '</button>').join('');
   const rows = entries.map((e) => '<tr><td><button type="button" class="section-button" data-range="' + e.offset + '-' + e.end +
-    '" data-name="' + escapeHtml(e.name) + '">' + escapeHtml(e.name) + '</button></td><td>' + e.offset + '</td><td>' +
+    '" data-name="' + escapeHtml(e.name) + '">' + escapeHtml(e.name) + '</button><span class="print-label">' + escapeHtml(e.name) + '</span></td><td>' + e.offset + '</td><td>' +
     e.size + '</td><td>' + (e.share * 100).toFixed(1) + '%</td></tr>').join('');
   return { bar, rows, entries };
 }

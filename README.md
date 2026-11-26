@@ -37,7 +37,7 @@ npm test
 python3 -m http.server 8000
 ```
 
-Open the server URL. The ES module page requires a static server. All input stays local, and fonts are self hosted with their licenses in `fonts/OFL.txt`. The test suite holds 338 checks covering decoder boundaries, parser regressions, native execution parity, the analysis engine, reporting, share links and the mounted controller.
+Open the server URL. The ES module page requires a static server. All input stays local, and fonts are self hosted with their licenses in `fonts/OFL.txt`. The test suite holds 341 checks covering decoder boundaries, parser regressions, native execution parity, the analysis engine, reporting, share links and the mounted controller.
 
 ## Files
 
