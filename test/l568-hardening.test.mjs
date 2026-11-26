@@ -34,6 +34,14 @@ test('base64urlToBytes rejects impossible one-character final chunks', () => {
   assert.throws(() => base64urlToBytes('A==='), /length/i);
 });
 
+test('base64urlToBytes rejects non-canonical trailing payload bits', () => {
+  for (const value of ['YR', 'YS', 'YT', 'YWJ', 'YWK', 'YWL']) {
+    assert.throws(() => base64urlToBytes(value), /padding bits/i, value);
+  }
+  assert.deepEqual([...base64urlToBytes('YQ')], [97]);
+  assert.deepEqual([...base64urlToBytes('YWI')], [97, 98]);
+});
+
 test('restoreHash rejects payloads above the share limit before decoding', () => {
   const encoded = bytesToBase64url(new Uint8Array(SHARE_LIMIT + 1));
   assert.throws(() => restoreHash('#b=' + encoded), /limit/i);

@@ -1,5 +1,5 @@
 import { parseModule, disassemble, traceFunction, demoModule, parseHex, hexRows } from './wasm.mjs';
-import { sha256, sectionMap, callGraph, auditModule, sandboxPlan, marshalArgs, runExport,
+import { sha256, sectionMap, callGraph, auditModule, sandboxPlan, marshalArgs,
   reportJSON, reportCSV, shareHash, restoreHash, runSelfTests,
   WORKER_RUNNER_SOURCE, SHARE_LIMIT } from './analysis.mjs';
 
@@ -191,8 +191,7 @@ export function mount(doc, win) {
       const result = await workerRun(cand, args);
       if (result) return result;
     }
-    const result = runExport(state.module, cand.name, rawArgs);
-    return result.ok ? { ok: true, results: result.results, ms: result.ms } : { ok: false, error: result.error };
+    return { ok: false, error: 'Sandbox worker unavailable; execution was declined rather than running an untimeboxed module on the page thread.' };
   }
   function load(bytes, label) {
     clear();

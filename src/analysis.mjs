@@ -287,6 +287,11 @@ export function base64urlToBytes(text) {
   if (!/^[A-Za-z0-9_-]*$/.test(input)) throw new Error('Share link data is not base64url');
   if (input.length % 4 === 1) throw new Error('Share link data has an invalid base64url length');
   const lookup = new Map(Array.from(B64, (ch, i) => [ch, i]));
+  const remainder = input.length % 4;
+  const last = input.length ? lookup.get(input[input.length - 1]) : 0;
+  if ((remainder === 2 && (last & 15) !== 0) || (remainder === 3 && (last & 3) !== 0)) {
+    throw new Error('Share link data has non-canonical base64url padding bits');
+  }
   const out = [];
   for (let i = 0; i < input.length; i += 4) {
     const chunk = input.slice(i, i + 4);

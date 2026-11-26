@@ -71,13 +71,14 @@ test('a worker error revokes its object URL before reporting failure', async () 
   assert.match(nodes['run-result'].textContent, /worker refused/);
 });
 
-test('a worker constructor failure falls back to the synchronous sandbox path', async () => {
+test('a worker constructor failure declines execution instead of an untimeboxed page-thread fallback', async () => {
   class BrokenWorker { constructor() { throw new Error('blocked by policy'); } }
   const { nodes, revoked } = mounted(BrokenWorker);
   nodes['run-args'].value = '[2,3]';
   await nodes['run-export'].emit('click');
   assert.deepEqual(revoked, ['blob:worker']);
-  assert.match(nodes['run-result'].textContent, /add\(2, 3\) returned 5/);
+  assert.match(nodes['run-result'].textContent, /Sandbox worker unavailable/);
+  assert.match(nodes.status.textContent, /Sandbox worker unavailable/);
 });
 
 test('starting a newer sandbox run invalidates an older result', async () => {

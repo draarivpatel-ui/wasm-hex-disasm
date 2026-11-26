@@ -23,7 +23,24 @@ class Element {
   emit(type, event = {}) { return this.listeners[type]({ target: this, ...event }); }
   click() { this.clicks++; }
 }
-function mounted({ hash = '', clipboard, url, blob } = {}) {
+class ImmediateWorker {
+  postMessage(message) {
+    try {
+      const instance = new WebAssembly.Instance(new WebAssembly.Module(new Uint8Array(message.bytes)));
+      const fn = instance.exports[message.name];
+      const args = message.params.map((type, i) => type === 'i64' ? BigInt(message.args[i]) : message.args[i]);
+      const invoked = fn(...args);
+      const raw = message.results.length === 0 ? [] : message.results.length === 1 ? [invoked] : invoked;
+      const values = raw.map((value, i) => ({ type: message.results[i], display: typeof value === 'bigint' ? String(value) + 'n' : String(value) }));
+      queueMicrotask(() => this.onmessage({ data: { ok: true, values } }));
+    } catch (error) {
+      queueMicrotask(() => this.onmessage({ data: { ok: false, error: String((error && error.message) || error) } }));
+    }
+  }
+  terminate() {}
+}
+
+function mounted({ hash = '', clipboard, url, blob, worker = ImmediateWorker } = {}) {
   const nodes = Object.fromEntries(Array.from(html.matchAll(/<([a-z]+)[^>]*\bid="([^"]+)"/g), (m) => [m[2], new Element(m[2], m[1])]));
   nodes['demo-select'].value = 'add'; nodes['trace-limit'].value = '2000'; nodes['trace-step'].value = '1';
   const anchors = [];
@@ -35,7 +52,8 @@ function mounted({ hash = '', clipboard, url, blob } = {}) {
     navigator: { clipboard: clipboard || { text: null, async writeText(t) { this.text = t; } } },
     location: { href: 'http://localhost:8000/', hash },
     URL: url || { created: [], createObjectURL() { this.created.push('u'); return 'blob:fake'; }, revokeObjectURL() {} },
-    Blob: blob || class { constructor(parts, opts) { this.parts = parts; this.type = opts && opts.type; } }
+    Blob: blob || class { constructor(parts, opts) { this.parts = parts; this.type = opts && opts.type; } },
+    Worker: worker
   };
   return { app: mount(doc, win), nodes, win, anchors };
 }
@@ -131,7 +149,7 @@ test('Self test markup reflects pass and fail states', () => {
   assert.match(markup, /class="fail"/);
 });
 
-test('Sandboxed runner returns a real result through the sync path', async () => {
+test('Sandboxed runner returns a real result through the worker path', async () => {
   const { nodes } = mounted();
   nodes['run-args'].value = '[2,3]';
   await nodes['run-export'].emit('click');
